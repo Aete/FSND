@@ -16,3 +16,6 @@ Thumbs.db
 Lib
 Scripts
 Include
+
+# node modules
+node_modules
