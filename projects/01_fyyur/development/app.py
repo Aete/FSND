@@ -13,6 +13,9 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
+import datetime
+
+from config import SQLALCHEMY_DATABASE_URI
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -24,7 +27,7 @@ db = SQLAlchemy(app)
 
 # TODO: connect to a local postgresql database
 app.debug = True
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://han:test@localhost:5432/fyyur'
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 migrate = Migrate(app,db)
 #----------------------------------------------------------------------------#
 # Models.
@@ -34,36 +37,59 @@ class Venue(db.Model):
     __tablename__ = 'Venue'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
+    name = db.Column(db.String, nullable = False)
+    city = db.Column(db.String(30), nullable = False)
+    state = db.Column(db.String(30), nullable = False)
+    address = db.Column(db.String(120), nullable = False)
+    genres = db.Column(db.ARRAY(db.String(20)), nullable = False)
+    phone = db.Column(db.String(120), nullable = False)
+    website = db.Column(db.String(100))
+    image_link = db.Column(db.String(100))
+    facebook_link = db.Column(db.String(50))
+    seeking_talent = db.Column(db.Boolean, nullable = False)
+    seeking_description = db.Column(db.String(120))
+    show = db.relationship('Show', backref='venue', cascade="all, delete-orphan" ,  lazy=True)
+    
+    @property
+    def get_show(self):
+      past_show = Show.query.filter((Show.start_time<datetime.now())&(Show.venue_id==self.id)).all()
+      upcoming_show = Show.query.filter((Show.start_time>datetime.now())&(Show.venue_id==self.id)).all()
+      return {
+            "past_shows": past_show,
+            "upcoming_shows": upcoming_show,
+            "past_shows_count": len(past_show),
+            "upcoming_shows_count": len(upcoming_show)
+      }
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
-
+    
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
+    name = db.Column(db.String, nullable=False)
+    city = db.Column(db.String(120), nullable=False)
+    state = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(120), nullable=False)
+    genres = db.Column(db.ARRAY(db.String(10)))
+    website = db.Column(db.String(100)) 
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    seeking_venue = db.Column(db.Boolean, default = True)
+    seeking_description = db.Column(db.String(100))
+    show = db.relationship('Show', backref='artist', cascade="all, delete-orphan", lazy=True)
 
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
+class Show(db.Model):
+  __tablename__= 'Show'
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+  id = db.Column(db.Integer, primary_key=True)
+  start_time = db.Column(db.TIMESTAMP(timezone=False))
+  venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'))
+  artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'))
 
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
-
 def format_datetime(value, format='medium'):
   date = dateutil.parser.parse(value)
   if format == 'full':
@@ -145,15 +171,6 @@ def show_venue(venue_id):
     "seeking_talent": True,
     "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
     "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-    "past_shows": [{
-      "artist_id": 4,
-      "artist_name": "Guns N Petals",
-      "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-      "start_time": "2019-05-21T21:30:00.000Z"
-    }],
-    "upcoming_shows": [],
-    "past_shows_count": 1,
-    "upcoming_shows_count": 0,
   }
   data2={
     "id": 2,
@@ -222,15 +239,32 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
+    error = False
+    body = {}
+    print(request.get_json())
+    # try:
+    #     description = request.get_json()['description']
+    #     todo = Todo(description=description, list_id = 1)
+    #     db.session.add(todo)
+    #     db.session.commit()
+    #     body['description'] = todo.description
+    # except:
+    #     db.session.rollback()
+    #     error = True
+    #     print(sys.exc_info())
+    # finally:
+    #     db.session.close()
+    # if not error:
+    #     return jsonify(body)
   # TODO: insert form data as a new Venue record in the db, instead
   # TODO: modify data to be the data object returned from db insertion
 
   # on successful db insert, flash success
-  flash('Venue ' + request.form['name'] + ' was successfully listed!')
+  #flash('Venue ' + request.form['name'] + ' was successfully listed!')
   # TODO: on unsuccessful db insert, flash an error instead.
   # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
   # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  #return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
