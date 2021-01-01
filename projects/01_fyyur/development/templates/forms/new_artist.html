@@ -32,6 +32,16 @@ block content %}
       commas', autofocus = true) }}
     </div>
     <div class="form-group">
+      <label for="imageLink">Image Link (optional)</label>
+      {{ form.image_link(class_ = 'form-control', placeholder='http://',
+      autofocus = true) }}
+    </div>
+    <div class="form-group">
+      <label for="webLink">Website (optional)</label>
+      {{ form.web_link(class_ = 'form-control', placeholder='http://', autofocus
+      = true) }}
+    </div>
+    <div class="form-group">
       <label for="genres">Facebook Link</label>
       {{ form.facebook_link(class_ = 'form-control', placeholder='http://',
       autofocus = true) }}
