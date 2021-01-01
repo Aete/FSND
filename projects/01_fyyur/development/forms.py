@@ -10,6 +10,9 @@ class ShowForm(Form):
     venue_id = StringField(
         'venue_id'
     )
+    title = StringField(
+        'title', validators=[DataRequired()]
+    )
     start_time = DateTimeField(
         'start_time',
         validators=[DataRequired()],

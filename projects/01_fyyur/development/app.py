@@ -6,7 +6,7 @@ import json
 import dateutil.parser
 import babel
 import sys
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -85,6 +85,7 @@ class Show(db.Model):
 
   id = db.Column(db.Integer, primary_key=True)
   start_time = db.Column(db.TIMESTAMP(timezone=False))
+  title = db.Column(db.String(30), nullable=False)
   venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'))
   artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'))
 
@@ -466,7 +467,6 @@ def create_artist_form():
 def create_artist_submission():
     error = False
     body = {}
-    print(request.form)
     try:
         name = request.form['name']
         city = request.form['city']
@@ -488,7 +488,6 @@ def create_artist_submission():
                       website = website,
                       seeking_venue = seeking_venue,
                       seeking_description = seeking_description)
-        print('test')
         db.session.add(artist)
         db.session.commit()
         body['name'] = artist.name
@@ -498,7 +497,6 @@ def create_artist_submission():
         print(sys.exc_info())
     finally:
         db.session.close()
-    print(body)
     if ~error:
       flash('Artist' + body['name'] + ' was successfully listed!')
     else:
@@ -560,15 +558,33 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
-  # TODO: insert form data as a new Show record in the db, instead
-
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+    error = False
+    body = {}
+    print(request.form)
+    try:
+        artist_id = request.form['artist_id']
+        venue_id = request.form['venue_id']
+        title = request.form['title']
+        start_time = request.form['start_time']
+        show = Show(artist_id=artist_id,
+                    venue_id = venue_id,
+                    title = title,
+                    start_time = start_time)
+        db.session.add(show)
+        db.session.commit()
+        body['title'] = show.title
+    except:
+        db.session.rollback()
+        error = True
+        print(sys.exc_info())
+    finally:
+        db.session.close()
+    print(error)
+    if ~error:
+      flash('Show' + body['title'] + ' was successfully listed!')
+    else:
+      flash('An error is occured to save the Artist')
+    return redirect(url_for('index')) 
 
 @app.errorhandler(404)
 def not_found_error(error):
