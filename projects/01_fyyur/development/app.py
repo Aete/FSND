@@ -17,6 +17,7 @@ from forms import *
 from datetime import datetime
 from copy import deepcopy
 from sqlalchemy.sql import func
+from collections import defaultdict
 
 from config import SQLALCHEMY_DATABASE_URI
 #----------------------------------------------------------------------------#
@@ -55,8 +56,8 @@ class Venue(db.Model):
     
     @property
     def get_show(self):
-      past_shows = [show.get_attribute for show in Show.query.filter((Show.start_time<datetime.now())&(Show.artist_id==self.id)).all()]
-      upcoming_shows = [show.get_attribute for show in Show.query.filter((Show.start_time>datetime.now())&(Show.artist_id==self.id)).all()]
+      past_shows = [show.get_attribute for show in Show.query.filter((Show.start_time<datetime.now())&(Show.venue_id==self.id)).all()]
+      upcoming_shows = [show.get_attribute for show in Show.query.filter((Show.start_time>datetime.now())&(Show.venue_id==self.id)).all()]
       return {
             "past_shows": past_shows,
             "upcoming_shows": upcoming_shows
@@ -191,17 +192,21 @@ def index():
 
 @app.route('/venues')
 def venues():
-  cities = set([(venue.get_attribute['city'], venue.get_attribute['state']) for venue in Venue.query.all()])
+  upcoming_shows = db.session.query(Venue.id,
+                                    func.count(Show.id).label('num_upcoming_shows')).join(Show).group_by(Venue.id).filter(Show.start_time>datetime.now()).subquery();
+  venues = db.session.query(Venue.id,
+                            Venue.city,
+                            Venue.state,
+                            Venue.name,
+                            upcoming_shows.c.num_upcoming_shows).outerjoin(upcoming_shows,Venue.id == upcoming_shows.c.id).all();
   data = []
-  for city,state in cities:
-    venues = Venue.query.filter((Venue.city==city)&(Venue.state==state)).all()
-    venues_info = [{"id":venue.id, "name":venue.name, "num_upcoming_shows": venue.get_attribute['upcoming_shows_count']} for venue in Venue.query.all()]
-    city_info = {
-    "city": city,
-    "state": state,
-    "venues": venues_info
-    }
-    data.append(city_info)
+  cities = set([(city, state) for idx, city, state, name, num_upcoming_shows in venues])
+  for c, s in cities:
+    data_city = {'city':c,
+                 'state': s,
+                 'venues':[{'id':idx, 'name':name, 'num_upcoming_shows':num_upcoming_shows} for idx, city, state, name, num_upcoming_shows in venues if (city == c) and (state==s)]
+                 }
+    data.append(data_city)
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])

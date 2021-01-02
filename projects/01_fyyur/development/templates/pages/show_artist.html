@@ -46,7 +46,11 @@ endblock %} {% block content %}
     {% endif %}
   </div>
   <div class="col-sm-6">
-    <img src="{{ artist.image_link }}" alt="Venue Image" />
+    {% if artist.image_link !='' %}
+    <img src="{{ artist.image_link }}" alt="Artist Image" />
+    {% else %}
+    <img src="https://placekitten.com/500/500" alt="Artist Image" />
+    {% endif %}
   </div>
 </div>
 <section>
