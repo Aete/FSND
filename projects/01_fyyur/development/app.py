@@ -16,6 +16,7 @@ from flask_wtf import Form
 from forms import *
 from datetime import datetime
 from copy import deepcopy
+from sqlalchemy.sql import func
 
 from config import SQLALCHEMY_DATABASE_URI
 #----------------------------------------------------------------------------#
@@ -44,7 +45,7 @@ class Venue(db.Model):
     state = db.Column(db.String(30), nullable = False)
     address = db.Column(db.String(120), nullable = False)
     genres = db.Column(db.ARRAY(db.String(20)), nullable = False)
-    phone = db.Column(db.String(30))
+    phone = db.Column(db.String(20))
     website = db.Column(db.String(100))
     image_link = db.Column(db.String(100))
     facebook_link = db.Column(db.String(50))
@@ -54,11 +55,11 @@ class Venue(db.Model):
     
     @property
     def get_show(self):
-      past_show = Show.query.filter((Show.start_time<datetime.now())&(Show.venue_id==self.id)).all()
-      upcoming_show = Show.query.filter((Show.start_time>datetime.now())&(Show.venue_id==self.id)).all()
+      past_shows = [show.get_attribute for show in Show.query.filter((Show.start_time<datetime.now())&(Show.artist_id==self.id)).all()]
+      upcoming_shows = [show.get_attribute for show in Show.query.filter((Show.start_time>datetime.now())&(Show.artist_id==self.id)).all()]
       return {
-            "past_shows": past_show,
-            "upcoming_shows": upcoming_show
+            "past_shows": past_shows,
+            "upcoming_shows": upcoming_shows
       }
     
     @property
@@ -106,28 +107,11 @@ class Artist(db.Model):
 
     @property
     def get_show(self):
-      past_show = Show.query.filter((Show.start_time<datetime.now())&(Show.artist_id==self.id)).all()
-      past_show_venue = []
-      for show in past_show:
-        venue = Venue.query.get(show.venue_id).get_attribute
-        show_venue_info = {"venue_id": venue.id,
-                            "venue_name": venue.name,
-                            "venue_image_link": venue.image_link,
-                            "start_time": show.start_time}
-        past_show_venue.append(show_venue_info)
-      upcoming_show_venue = []
-      upcoming_show = Show.query.filter((Show.start_time>datetime.now())&(Show.artist_id==self.id)).all()
-      for show in upcoming_show:
-        venue = Venue.query.get(show.venue_id).get_attribute
-        show_venue_info = {"venue_id": venue['id'],
-                            "venue_name": venue['name'],
-                            "venue_image_link": venue['image_link'],
-                            "start_time": show.start_time}
-        upcoming_show_venue.append(show_venue_info)
-      print(past_show, upcoming_show)
+      past_shows = [show.get_attribute for show in Show.query.filter((Show.start_time<datetime.now())&(Show.artist_id==self.id)).all()]
+      upcoming_shows = [show.get_attribute for show in Show.query.filter((Show.start_time>datetime.now())&(Show.artist_id==self.id)).all()]
       return {
-            "past_shows": past_show_venue,
-            "upcoming_shows": upcoming_show_venue
+            "past_shows": past_shows,
+            "upcoming_shows": upcoming_shows
       }
     
     @property
@@ -164,6 +148,22 @@ class Show(db.Model):
   venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'))
   artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'))
 
+  @property
+  def get_attribute(self):
+    artist = Artist.query.get(self.artist_id)
+    venue = Venue.query.get(self.venue_id)
+    return {
+      'id': self.id,
+      'title': self.title,
+      'venue_id': self.venue_id,
+      'venue_name': venue.name,
+      'venue_image_link': venue.image_link,
+      'artist_id': self.artist_id,
+      'artist_name': artist.name,
+      'artist_image_link': artist.image_link,
+      'start_time': format_datetime(str(self.start_time)),
+    }
+
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -173,7 +173,7 @@ def format_datetime(value, format='medium'):
       format="EEEE MMMM, dd, y 'at' h:mma"
   elif format == 'medium':
       format="EE MM, dd, y h:mma"
-  return babel.dates.format_datetime(date, format)
+  return babel.dates.format_datetime(date, format, locale='en')
 
 app.jinja_env.filters['datetime'] = format_datetime
 
@@ -191,8 +191,6 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_shows should be aggregated based on number of upcoming shows per venue.
   cities = set([(venue.get_attribute['city'], venue.get_attribute['state']) for venue in Venue.query.all()])
   data = []
   for city,state in cities:
@@ -208,23 +206,16 @@ def venues():
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for Hop should return "The Musical Hop".
-  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+  venues =[venue.get_attribute for venue in Venue.query.filter(Venue.name.ilike("%{}%".format(request.form['search_term']))).all()]
+  data = [{'id': venue['id'], 'name':venue['name'], 'num_upcoming_shows':venue['upcoming_shows_count'] } for venue in venues ]
   response={
-    "count": 1,
-    "data": [{
-      "id": 2,
-      "name": "The Dueling Pianos Bar",
-      "num_upcoming_shows": 0,
-    }]
+    "count": len(data),
+    "data": data
   }
   return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
-  # shows the venue page with the given venue_id
-  # TODO: replace with real venue data from the venues table, using venue_id
   venue = Venue.query.get(venue_id).get_attribute
   return render_template('pages/show_venue.html', venue=venue)
 
@@ -301,23 +292,16 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-  # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
-  # search for "band" should return "The Wild Sax Band".
+  artists =[artist.get_attribute for artist in Artist.query.filter(Artist.name.ilike("%{}%".format(request.form['search_term']))).all()]
+  data = [{'id': artist['id'], 'name':artist['name'], 'num_upcoming_shows':artist['upcoming_shows_count'] } for artist in artists ]
   response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
+    "count": len(data),
+    "data": data
   }
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  # shows the venue page with the given venue_id
-  # TODO: replace with real venue data from the venues table, using venue_id
   return render_template('pages/show_artist.html', artist=Artist.query.get(artist_id).get_attribute)
 
 #  Update
@@ -345,6 +329,7 @@ def edit_artist(artist_id):
 def edit_artist_submission(artist_id):
   # TODO: take values from the form submitted, and update existing
   # artist record with ID <artist_id> using the new attributes
+  # this is not mandatory
 
   return redirect(url_for('show_artist', artist_id=artist_id))
 
@@ -366,12 +351,14 @@ def edit_venue(venue_id):
     "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
   }
   # TODO: populate form with values from venue with ID <venue_id>
+  # this is not mandatory
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
   # TODO: take values from the form submitted, and update existing
   # venue record with ID <venue_id> using the new attributes
+  # this is not mandatory
   return redirect(url_for('show_venue', venue_id=venue_id))
 
 #  Create Artist
@@ -428,25 +415,8 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  # displays list of shows at /shows
-  # TODO: replace with real venues data.
-  #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }]
-  return render_template('pages/shows.html', shows=data)
+  shows = [show.get_attribute for show in Show.query.all()]
+  return render_template('pages/shows.html', shows=shows)
 
 @app.route('/shows/create')
 def create_shows():
