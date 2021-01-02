@@ -49,7 +49,11 @@ block content %}
     {% endif %}
   </div>
   <div class="col-sm-6">
+    {% if venue.image_link !='' %}
     <img src="{{ venue.image_link }}" alt="Venue Image" />
+    {% else %}
+    <img src="https://picsum.photos/500/500" alt="Venue Image" />
+    {% endif %}
   </div>
 </div>
 <section>
