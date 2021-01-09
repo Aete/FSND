@@ -29,10 +29,7 @@ class TriviaTestCase(unittest.TestCase):
         """Executed after reach test"""
         pass
 
-    """
-    TODO
-    Write at least one test for each test for successful operation and for expected errors.
-    """
+    # (Done) TODO rite at least one test for each test for successful operation and for expected errors.
     def test_get_categories(self):
         res = self.client().get('/categories')
         data = json.loads(res.data)
@@ -40,10 +37,14 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['success'])
         self.assertTrue(len(data['categories']))
 
-    # TODO write a test case for the failure
-    # def test_get_404_error_for_categories(self):
-    #     res = self.client().get('/categories/5')
-    #     self.assertEqual(res.status_code,404)
+    # (Done) TODO write a test case for the failure
+    def test_get_404_error_for_categories(self):
+        res = self.client().get('/categories/5')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'], False)
+        self.assertEqual(data['message'], "resource not found")
+
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
