@@ -29,7 +29,7 @@ class TriviaTestCase(unittest.TestCase):
         """Executed after reach test"""
         pass
 
-    # (Done) TODO rite at least one test for each test for successful operation and for expected errors.
+    # (Done) TODO Write a test for successful operation with getting categories
     def test_get_categories(self):
         res = self.client().get('/categories')
         data = json.loads(res.data)
@@ -45,6 +45,31 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], "resource not found")
 
+    # (Done) TODO Write a test for successful operation with getting questions without any page number
+    def test_get_questions_without_page(self):
+        res = self.client().get('/questions')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['total_books'])
+        self.assertTrue(len(data['books']))
+
+    # (Done) TODO Write a test for successful operation with getting questions with a page number
+    def test_get_questions_with_page(self):
+        res = self.client().get('/questions?page=2')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['total_books'])
+        self.assertTrue(len(data['books']))
+
+    # (Done) TODO write a test case for the failure
+    def test_404_sent_requesting_beyond_valid_page(self):
+        res = self.client().get('/questions?page=500')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'], "resource not found")
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
