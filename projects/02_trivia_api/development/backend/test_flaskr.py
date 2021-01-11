@@ -83,8 +83,6 @@ class TriviaTestCase(unittest.TestCase):
     #     self.assertEqual(res.status_code,200)
     #     self.assertEqual(question,None)
     #     self.assertTrue(data['success'])
-    #     self.assertTrue(data['total_questions'])
-    #     self.assertTrue(len(data['questions']))
 
     def test_get_404_error_delete_question(self):
         res = self.client().delete('/questions/1000')
@@ -117,7 +115,6 @@ class TriviaTestCase(unittest.TestCase):
         self.assertTrue(data['success'])
         self.assertTrue(data['total_questions'])
         self.assertTrue(len(data['questions']))
-        print(data['questions'])
 
 
     def test_get_422_error_search_question(self):
@@ -127,6 +124,36 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(data['success'], False)
         self.assertEqual(data['message'], "unprocessable")
 
+    def test_search_question_by_category_id(self):
+        res = self.client().get('/categories/1/questions')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['total_questions'])
+        self.assertTrue(len(data['questions']))
+
+    def test_get_404_error_delete_question(self):
+        res = self.client().get('/categories/1000/questions')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"resource not found")
+
+    def test_get_quiz(self):
+        new_quiz = {'previous_questions':[], 'quiz_category':1}
+        res = self.client().get('/quizzes', json=new_quiz, content_type='application/json')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,200)
+        self.assertTrue(data['success'])
+        self.assertTrue(len(data['question']))
+
+    def test_get_404_error_get_quiz(self):
+        new_quiz = {'previous_questions':[], 'quiz_category':7}
+        res = self.client().get('/quizzes', json=new_quiz, content_type='application/json')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"resource not found")
 
 # Make the tests conveniently executable
 if __name__ == "__main__":

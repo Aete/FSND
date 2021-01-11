@@ -50,7 +50,7 @@ def create_app(test_config=None):
           'categories': {category.id:category.type for category in categories}
         })
     except:
-      abort(400)
+      abort(404)
 
   '''
   Create an endpoint to handle GET requests for questions, 
@@ -67,6 +67,7 @@ def create_app(test_config=None):
   def get_questions():
     selection = Question.query.order_by(Question.id).all()
     current_questions = paginate_questions(request, selection)
+    categories = Category.query.order_by(Category.type).all()
 
     if len(current_questions) == 0:
       abort(404)
@@ -74,7 +75,9 @@ def create_app(test_config=None):
     return jsonify({
       'success': True,
       'questions': current_questions,
-      'total_questions': len(Question.query.all())
+      'total_questions': len(Question.query.all()),
+      'current_category': None,
+      'categories': {category.id:category.type for category in categories}
     })
 
 
@@ -95,9 +98,7 @@ def create_app(test_config=None):
 
       return jsonify({
         'success': True,
-        'deleted': question_id,
-        'questions': current_questions,
-        'total_questions': len(Question.query.all())
+        'deleted': question_id
       })
     else:
       abort(404)
@@ -123,20 +124,16 @@ def create_app(test_config=None):
       new_category = body.get('category', None)
       question = Question(question=new_question, answer=new_answer, difficulty = new_difficulty, category=new_category)
       question.insert()
-      selection = Question.query.order_by(Question.id).all()
-      current_questions = paginate_questions(request, selection)
 
       return jsonify({
         'success': True,
         'created': question.id,
-        'questions': current_questions,
-        'total_questions': len(Question.query.all())
       })
 
     except:
       abort(422)
+
   '''
-  @TODO: 
   Create a POST endpoint to get questions based on a search term. 
   It should return any questions for whom the search term 
   is a substring of the question. 
@@ -156,20 +153,31 @@ def create_app(test_config=None):
       return jsonify({
         'success': True,
         'questions': current_questions,
-        'total_questions': len(Question.query.all())
+        'total_questions': len(Question.query.all()),
+        'current_category': None
       })
     except:
       abort(422)
 
-  '''
-  @TODO: 
+  ''' 
   Create a GET endpoint to get questions based on category. 
 
   TEST: In the "List" tab / main screen, clicking on one of the 
   categories in the left column will cause only questions of that 
   category to be shown. 
   '''
-
+  @app.route('/categories/<int:category_id>/questions', methods=['GET'])
+  def get_questions_by_category(category_id):
+    selection = Question.query.order_by(Question.id).filter(Question.category == category_id).all()
+    current_questions = paginate_questions(request, selection)
+    if len(current_questions) == 0:
+      abort(404)
+    return jsonify({
+        'success': True,
+        'questions': current_questions,
+        'total_questions': len(Question.query.all()),
+        'current_category':category_id
+      })
 
   '''
   @TODO: 
@@ -182,6 +190,21 @@ def create_app(test_config=None):
   one question at a time is displayed, the user is allowed to answer
   and shown whether they were correct or not. 
   '''
+  @app.route('/quizzes', methods=['GET'])
+  def play_quiz():
+    body = request.get_json()
+    prev_quizzes = body.get('previous_questions', None)
+    category_id = body.get('quiz_category', None)
+    selection = Question.query.order_by(Question.id).filter(Question.category == category_id).filter(~Question.id.in_(prev_quizzes)).all()
+    if len(selection) == 0:
+      abort(404)
+    current_question =  selection[random.randint(0, len(selection)-1)].format() 
+
+    return jsonify({
+        'success': True,
+        'question': current_question
+      })
+
 
   '''
   @TODO: 
