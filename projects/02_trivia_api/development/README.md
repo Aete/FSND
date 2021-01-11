@@ -1,7 +1,9 @@
-# Full Stack API Final Project
+# Full Stack API Final Project - Full Stack Trivia
 
-## Full Stack Trivia
+## Introduction
 
+### Motivation
+<i>from [Udacity FSND repository](https://github.com/udacity/FSND/tree/master/projects/02_trivia_api/starter)</i> <br>
 Udacity is invested in creating bonding experiences for its employees and students. A bunch of team members got the idea to hold trivia on a regular basis and created a  webpage to manage the trivia app and play the game, but their API experience is limited and still needs to be built out. 
 
 That's where you come in! Help them finish the trivia app so they can start holding trivia and seeing who's the most knowledgeable of the bunch. The application must:
@@ -14,31 +16,24 @@ That's where you come in! Help them finish the trivia app so they can start hold
 
 Completing this trivia app will give you the ability to structure plan, implement, and test an API - skills essential for enabling your future applications to communicate with others. 
 
-## Tasks
+## Prerequisites & Installation
 
-There are `TODO` comments throughout project. Start by reading the READMEs in:
+### How to Install?
 
-1. [`./frontend/`](./frontend/README.md)
-2. [`./backend/`](./backend/README.md)
+#### Installing Dependencies: Frontend
+Please install dependencies by naviging to the `/backend` directory and running:
+```bash
+npm install
+```
+#### Installing Dependencies: Backend
+Once you have your virtual environment setup and running, install dependencies by naviging to the `/backend` directory and running:
 
-We recommend following the instructions in those files in order. This order will look familiar from our prior work in the course.
+```bash
+pip install -r requirements.txt
+```
 
-## Starting and Submitting the Project
-
-[Fork](https://help.github.com/en/articles/fork-a-repo) the [project repository]() and [Clone](https://help.github.com/en/articles/cloning-a-repository) your forked repository to your machine. Work on the project locally and make sure to push all your changes to the remote repository before submitting the link to your repository in the Classroom. 
-
-## About the Stack
-
-We started the full stack application for you. It is desiged with some key functional areas:
-
-### Backend
-
-The `./backend` directory contains a partially completed Flask and SQLAlchemy server. You will work primarily in app.py to define your endpoints and can reference models.py for DB and SQLAlchemy setup. 
-
-### Frontend
-
-The `./frontend` directory contains a complete React frontend to consume the data from the Flask server. You will need to update the endpoints after you define them in the backend. Those areas are marked with TODO and can be searched for expediency. 
-
-Pay special attention to what data the frontend is expecting from each API response to help guide how you format your API. 
-
-[View the README.md within ./frontend for more details.](./frontend/README.md)
+#### Database Setup
+With Postgres running, restore a database using the trivia.psql file provided. From the backend folder in terminal run:
+```bash
+psql trivia < trivia.psql
+```
