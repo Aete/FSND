@@ -51,8 +51,8 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
         self.assertEqual(res.status_code,200)
         self.assertTrue(data['success'])
-        self.assertTrue(data['total_books'])
-        self.assertTrue(len(data['books']))
+        self.assertTrue(data['total_questions'])
+        self.assertTrue(len(data['questions']))
 
     # (Done) TODO Write a test for successful operation with getting questions with a page number
     def test_get_questions_with_page(self):
@@ -60,8 +60,8 @@ class TriviaTestCase(unittest.TestCase):
         data = json.loads(res.data)
         self.assertEqual(res.status_code,200)
         self.assertTrue(data['success'])
-        self.assertTrue(data['total_books'])
-        self.assertTrue(len(data['books']))
+        self.assertTrue(data['total_questions'])
+        self.assertTrue(len(data['questions']))
 
     # (Done) TODO write a test case for the failure
     def test_404_sent_requesting_beyond_valid_page(self):
@@ -70,6 +70,23 @@ class TriviaTestCase(unittest.TestCase):
         self.assertEqual(res.status_code,404)
         self.assertEqual(data['success'],False)
         self.assertEqual(data['message'], "resource not found")
+
+    def test_delete_question(self):
+        res = self.client().delete('/questions/9')
+        data = json.loads(res.data)
+        question = Question.query.filter(Question.id == 9).one_or_none()
+        self.assertEqual(res.status_code,200)
+        self.assertEqual(question,None)
+        self.assertTrue(data['success'])
+        self.assertTrue(data['total_questions'])
+        self.assertTrue(len(data['questions']))
+
+    def test_get_404_error_delete_question(self):
+        res = self.client().delete('/questions/1000')
+        data = json.loads(res.data)
+        self.assertEqual(res.status_code,404)
+        self.assertEqual(data['success'],False)
+        self.assertEqual(data['message'],"resource not found")
 
 # Make the tests conveniently executable
 if __name__ == "__main__":
