@@ -62,3 +62,9 @@ You can test the backend part by running
 python test_trivia.py
 ```
 at the `/backend` directory
+
+## API references
+Please check the [backend](https://github.com/Aete/FSND/tree/master/projects/02_trivia_api/development/backend) part.
+
+## Authors and Acknowledgements
+A starter code of the repository is written by [Udacity FSND team](https://github.com/udacity/FSND/tree/master/projects/02_trivia_api/starter). And Seunggyun Han developed this repository to complete.
