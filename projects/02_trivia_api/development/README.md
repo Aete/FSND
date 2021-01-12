@@ -19,9 +19,13 @@ Completing this trivia app will give you the ability to structure plan, implemen
 ## Prerequisites & Installation
 
 ### How to Install?
+Download the repository or Clone this repository by running:
+```bash
+git clone https://github.com/Aete/FSND
+```
 
 #### Installing Dependencies: Frontend
-Please install dependencies by naviging to the `/backend` directory and running:
+Please install dependencies by naviging to the `/frontend` directory and running:
 ```bash
 npm install
 ```
@@ -35,5 +39,26 @@ pip install -r requirements.txt
 #### Database Setup
 With Postgres running, restore a database using the trivia.psql file provided. From the backend folder in terminal run:
 ```bash
+createdb trivia
 psql trivia < trivia.psql
 ```
+
+## Run
+To start the backend server, please navigate to the `/backend` directory and run:
+```bash
+export FLASK_APP=flaskr
+flask run
+```
+To start the frontend page, please navigate to the `/frontend` directory and run:
+```bash
+npm start
+```
+Default address of the backend server is `http://localhost:5000` and the frontend page is `http://localhost:3000`.
+
+
+## Test
+You can test the backend part by running
+```bash
+python test_trivia.py
+```
+at the `/backend` directory
