@@ -194,7 +194,7 @@ def create_app(test_config=None):
   def play_quiz():
     body = request.get_json()
     prev_quizzes = body.get('previous_questions', None)
-    category_id = body.get('quiz_category', None)
+    category_id = body.get('quiz_category', None)['id']
     selection = Question.query.order_by(Question.id).filter(Question.category == category_id).filter(~Question.id.in_(prev_quizzes)).all()
     if len(selection) == 0:
       abort(404)
